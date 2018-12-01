@@ -1,13 +1,15 @@
 const fetch = require("node-fetch");
+const {urlEncode} = require("./util.js");
 
-const {urlEncode} = require("../util.js");
+// const clientId = process.env.SPOTIFY_CLIENT_ID;
+// const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+// const redirect_uri = process.env.SPOTIFY_REDIRECT_URI;
+// const refresh_token = process.env.SPOTIFY_REFRESH_TOKEN;
 
-const clientId = process.env.SPOTIFY_CLIENT_ID;
-const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-const redirect_uri = process.env.SPOTIFY_REDIRECT_URI;
-
-// For testing purposes
-const refresh_token = process.env.SPOTIFY_REFRESH_TOKEN;
+const clientId = "***REMOVED***";
+const clientSecret = "***REMOVED***";
+const redirect_uri = "***REMOVED***";
+const refresh_token = "***REMOVED***";
 
 /**
 * Gets a new access token to make requests
@@ -20,10 +22,11 @@ const RefreshToken = async () => {
       'Authorization': 'Basic ' + new Buffer(`${clientId}:${clientSecret}`).toString('base64'),
       'Content-Type': 'application/x-www-form-urlencoded'
     },
-    body: urlEncode({refresh_token: refreshToken, grant_type: "refresh_token"})
+    body: urlEncode({refresh_token, grant_type: "refresh_token"})
   });
 
   let json = await response.json();
+  console.log(JSON.stringify(json));
 
   return json.access_token;
 };
@@ -49,13 +52,10 @@ const GetPlaylists = async (identityId) => {
 /**
 * Search Spotify
 * TODO: Queries seem iffy, sometimes using * is better, sometimes quotes, sometimes nothing... need to investigate further
-* TODO: Make it only search songs
 */
-const Search = async (identityId, term, type, limit, offset) => {
-  let accessToken = await RefreshToken(identityId);
-  let url = `https://api.spotify.com/v1/search?q=${term.toLowerCase()}*&type=${type}&limit=${limit}${offset
-    ? "&offset=" + offset
-    : ""}`;
+const Search = async (term) => {
+  let accessToken = await RefreshToken();
+  let url = `https://api.spotify.com/v1/search?q=${term.toLowerCase()}*&type=track`;
 
   let response = await fetch(url, {
     method: 'GET',
@@ -66,7 +66,7 @@ const Search = async (identityId, term, type, limit, offset) => {
   });
 
   let data = await response.json();
-  return data[type + "s"].items;
+  return data.tracks.items;
 };
 
 /**
@@ -103,36 +103,11 @@ const GetUserProfile = async (accessToken) => {
 }
 
 /**
-* Creates a new playlist
-*/
-const CreatePlaylist = async (name) => {
-  let accessToken = await RefreshToken();
-  let {display_name, id} = await GetUserProfile(accessToken);
-
-  let response = await fetch(`https://api.spotify.com/v1/users/${id}/playlists`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Accept': 'application/json'
-    },
-    body: JSON.stringify({
-      name,
-      description: `A custom playlist made for ${display_name || id}`,
-      public: false
-    })
-  });
-
-  let data = await response.json();
-  console.log(JSON.stringify(data, null, 2));
-
-  return data;
-};
-
-/**
 * Adds specified songs to the playlist
 */
-const AddSongsToPlaylist = async (id, uris) => {
+const AddSongsToPlaylist = async (uris) => {
   let accessToken = await RefreshToken();
+  let id = await GetPlaylists().filter(p => p.name === "AlexaQ Playlist")[0];
   let response = await fetch(`https://api.spotify.com/v1/playlists/${id}/tracks`, {
     method: 'POST',
     headers: {
@@ -148,6 +123,7 @@ const AddSongsToPlaylist = async (id, uris) => {
 
 const GetDevices = async () => {
     let accessToken = await RefreshToken();
+    console.log("AccessToken: " + accessToken);
   
     let response = await fetch(`https://api.spotify.com/v1/me/player/devices`, {
       method: 'GET',
@@ -167,13 +143,29 @@ const GetDevices = async () => {
     }
 };
 
+const Play = async (device_id, playlist_uri) => {
+    let accessToken = await RefreshToken();
+  
+    let response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${device_id}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({
+        context_uri: playlist_uri
+      })
+    });
+  
+    console.log(response.status);
+};
+
 module.exports = {
   RefreshToken,
-  CreatePlaylist,
   GetPlaylists,
   AddSongsToPlaylist,
   GetPlaylistTracks,
   Search,
   GetUserProfile,
-  GetDevices
+  GetDevices,
+  Play
 };
