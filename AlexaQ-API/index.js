@@ -5,6 +5,7 @@ async function Play(position) {
     let devices = await spotify.GetDevices();
     let device_id = devices.filter(t => t.name === "Marko's Echo Dot")[0].id;
     let { uri } = await spotify.GetPlaylist("AlexaQ Playlist");
+    console.log(device_id + " " + uri + " " + position);
 
     await spotify.Play(device_id, uri, position);
 }
