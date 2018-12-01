@@ -25,6 +25,17 @@ module.exports = async function (context, req) {
             body: JSON.stringify(results)
         };
     }
+    else if (func === "db")
+    {
+        try {
+            await db.helloCosmos();
+        } 
+        catch (e)
+        {
+            console.log("EEEEEE");
+            console.log(e);
+        }
+    }
     else 
     {
         context.res = {
