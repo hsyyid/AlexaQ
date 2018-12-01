@@ -157,9 +157,9 @@ const Play = async (device_id, playlist_uri, position) => {
         },
         body: JSON.stringify({
             context_uri: playlist_uri,
-            offset: {
+            offset: position ? {
                 position
-            }
+            } : undefined
         })
     });
 
