@@ -215,6 +215,21 @@ const GetCurrentlyPlaying = async (name) => {
     return await response.json();
 };
 
+const GetCurrentTrack = async () => {
+    let accessToken = await RefreshToken();
+
+    let response = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json'
+        }
+    });
+
+    let data = await response.json();
+    return data.item;
+};
+
 module.exports = {
   RefreshToken,
   GetPlaylist,
@@ -224,5 +239,6 @@ module.exports = {
   GetUserProfile,
   GetDevices,
   Play,
-  GetCurrentlyPlaying
+  GetCurrentlyPlaying,
+  GetCurrentTrack
 };
