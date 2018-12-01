@@ -1,4 +1,5 @@
 const fetch = require("node-fetch");
+const delay = require('delay');
 const {urlEncode} = require("./util.js");
 
 // const clientId = process.env.SPOTIFY_CLIENT_ID;
@@ -32,10 +33,10 @@ const RefreshToken = async () => {
 };
 
 /**
-* Gets users playlists
+* Gets users playlist
 */
-const GetPlaylists = async (identityId) => {
-  let accessToken = await RefreshToken(identityId);
+const GetPlaylist = async (name) => {
+  let accessToken = await RefreshToken();
 
   let {id} = await GetUserProfile(accessToken);
   let playlists = await GetList("https://api.spotify.com/v1/me/playlists?limit=50", {
@@ -46,7 +47,9 @@ const GetPlaylists = async (identityId) => {
     }
   });
 
-  return playlists.filter(p => p.owner.id === id);
+  console.log("Playlists: " + JSON.stringify(playlists));
+
+  return playlists.filter(p => p.owner.id === id && p.name === name)[0];
 };
 
 /**
@@ -72,9 +75,9 @@ const Search = async (term) => {
 /**
 * Get playlist tracks
 */
-const GetPlaylistTracks = async (id, accessToken, identityId) => {
-  if (!accessToken)
-    accessToken = await RefreshToken(identityId);
+const GetPlaylistTracks = async () => {
+  let {id} = await GetPlaylist("AlexaQ Playlist");
+  let accessToken = await RefreshToken();
 
   let tracks = await GetList(`https://api.spotify.com/v1/playlists/${id}/tracks?limit=100`, {
     method: 'GET',
@@ -107,7 +110,8 @@ const GetUserProfile = async (accessToken) => {
 */
 const AddSongsToPlaylist = async (uris) => {
   let accessToken = await RefreshToken();
-  let id = await GetPlaylists().filter(p => p.name === "AlexaQ Playlist")[0];
+  let {id} = await GetPlaylist("AlexaQ Playlist");
+
   let response = await fetch(`https://api.spotify.com/v1/playlists/${id}/tracks`, {
     method: 'POST',
     headers: {
@@ -143,7 +147,7 @@ const GetDevices = async () => {
     }
 };
 
-const Play = async (device_id, playlist_uri) => {
+const Play = async (device_id, playlist_uri, position) => {
     let accessToken = await RefreshToken();
   
     let response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${device_id}`, {
@@ -152,20 +156,73 @@ const Play = async (device_id, playlist_uri) => {
         'Authorization': `Bearer ${accessToken}`
       },
       body: JSON.stringify({
-        context_uri: playlist_uri
+        context_uri: playlist_uri,
+        offset: {
+           position
+        }
       })
     });
   
     console.log(response.status);
 };
 
+const GetList = async (base_url, params) => {
+    let list = [];
+    let next = base_url;
+  
+    do {
+      try {
+        let response = await fetch(next, params);
+  
+        if (response.status === 200) {
+          let data = await response.json();
+  
+          if (data && data.items && data.items.length > 0) {
+            list.push.apply(list, data.items);
+            next = data.next;
+            console.log(list.length + " / " + data.total);
+          }
+        } else if (response.status === 429 && response.headers.has("retry-after")) {
+          let retryDelay = parseInt(response.headers.get("retry-after"));
+          console.log(`Retrying after ${retryDelay} seconds...`);
+          // Delay is returned in seconds, we need it in millisec
+          await delay(retryDelay * 1000);
+        }
+      } catch (err) {
+        console.log("Error!!!");
+        console.error(err);
+  
+        if (err && err.message) {
+          console.log("Error message: " + err.message);
+        }
+      }
+    } while (next);
+  
+    return list;
+};
+
+const GetCurrentlyPlaying = async (name) => {
+    let accessToken = await RefreshToken();
+
+    let response = await fetch("https://api.spotify.com/v1/me/player", {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json'
+        }
+    });
+
+    return await response.json();
+};
+
 module.exports = {
   RefreshToken,
-  GetPlaylists,
+  GetPlaylist,
   AddSongsToPlaylist,
   GetPlaylistTracks,
   Search,
   GetUserProfile,
   GetDevices,
-  Play
+  Play,
+  GetCurrentlyPlaying
 };
