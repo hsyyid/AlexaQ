@@ -2,15 +2,10 @@ const fetch = require("node-fetch");
 const delay = require('delay');
 const { urlEncode } = require("./util.js");
 
-// const clientId = process.env.SPOTIFY_CLIENT_ID;
-// const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-// const redirect_uri = process.env.SPOTIFY_REDIRECT_URI;
-// const refresh_token = process.env.SPOTIFY_REFRESH_TOKEN;
-
-const clientId = "***REMOVED***";
-const clientSecret = "***REMOVED***";
-const redirect_uri = "***REMOVED***";
-const refresh_token = "***REMOVED***";
+const clientId = process.env.SPOTIFY_CLIENT_ID;
+const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+const redirect_uri = process.env.SPOTIFY_REDIRECT_URI;
+const refresh_token = process.env.SPOTIFY_REFRESH_TOKEN;
 
 /**
 * Gets a new access token to make requests
