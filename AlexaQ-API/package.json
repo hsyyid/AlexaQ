@@ -93,7 +93,7 @@
       "resolved": "https://registry.npmjs.org/md5.js/-/md5.js-1.3.5.tgz",
       "version": "1.3.5"
     },
-    "node-fetch": "^2.3.0",
+    "node-fetch": "^2.6.1",
     "priorityqueuejs": {
       "integrity": "sha1-LuTyPCVgkT4IwHzlzN1t498sWvg=",
       "resolved": "https://registry.npmjs.org/priorityqueuejs/-/priorityqueuejs-1.0.0.tgz",
